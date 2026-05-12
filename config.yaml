@@ -12,9 +12,9 @@ project:
 
 models:
   # Generates interview questions from the retrieved context.
-  chat_model: gpt-4o
+  chat_model: gpt-5.2  # Options: gpt-5.5, gpt-5.4, gpt-5.4-mini, gpt-5.4-nano, gpt-5.2, gpt-5.1, gpt-5, gpt-5-mini, gpt-5-nano
   # Scores candidate answers and writes feedback.
-  evaluator_model: gpt-4o
+  evaluator_model: gpt-5.2  # Options: gpt-5.5, gpt-5.4, gpt-5.4-mini, gpt-5.4-nano, gpt-5.2, gpt-5.1, gpt-5, gpt-5-mini, gpt-5-nano
   # Embeds documents and queries for semantic retrieval.
   embedding_model: text-embedding-3-small
   # Higher values make questions more varied; lower values are more predictable.

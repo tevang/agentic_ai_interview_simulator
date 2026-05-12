@@ -11,14 +11,17 @@ class LLMClient:
         self.client = OpenAI()
 
     def text(self, *, model: str, system: str, user: str, temperature: float = 0.2) -> str:
-        response = self.client.chat.completions.create(
-            model=model,
-            messages=[
+        payload: Dict[str, Any] = {
+            "model": model,
+            "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            temperature=temperature,
-        )
+        }
+        if self._supports_temperature(model):
+            payload["temperature"] = temperature
+
+        response = self.client.chat.completions.create(**payload)
         return response.choices[0].message.content
 
     def json(
@@ -31,20 +34,27 @@ class LLMClient:
         schema_name: str,
         temperature: float = 0.2,
     ) -> Dict[str, Any]:
-        response = self.client.chat.completions.create(
-            model=model,
-            messages=[
+        payload: Dict[str, Any] = {
+            "model": model,
+            "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            response_format={
+            "response_format": {
                 "type": "json_schema",
                 "json_schema": {
                     "name": schema_name,
                     "strict": True,
                     "schema": schema,
                 }
-            },
-            temperature=temperature,
-        )
+            }
+        }
+        if self._supports_temperature(model):
+            payload["temperature"] = temperature
+
+        response = self.client.chat.completions.create(**payload)
         return json.loads(response.choices[0].message.content)
+
+    @staticmethod
+    def _supports_temperature(model: str) -> bool:
+        return not model.startswith("gpt-5")

@@ -16,6 +16,7 @@ class InterviewTurn:
     question: str
     expected_answer: str
     candidate_answer: str = ""
+    candidate_questions: list[str] = field(default_factory=list)
     evaluation: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -90,14 +91,20 @@ Generate the next interview question as JSON.
         self,
         question: Dict[str, Any],
         candidate_answer: str,
+        candidate_questions: list[str],
         transcript: List[InterviewTurn],
     ) -> Dict[str, Any]:
         context = self._retrieve_context(transcript)
 
         system = f"""
 You are evaluating a candidate answer in an interview simulation for {self.name}.
-Be fair, specific, and useful. Evaluate against the expected answer and rubric,
+Be fair, specific, and useful. Evaluate only the candidate answer, not the
+candidate's separate questions. Evaluate against the expected answer and rubric,
 while giving credit for equivalent wording or valid alternative designs.
+Always include a maximum_score_answer: a polished answer that would earn the
+maximum score, grounded in the candidate's answer and the supplied context.
+If candidate_questions are provided, answer them directly in
+answers_to_candidate_questions.
 Return JSON only.
 """.strip()
 
@@ -117,6 +124,9 @@ Rubric:
 Candidate answer:
 {candidate_answer}
 
+Candidate questions for the simulator, separated from the interview answer:
+{self._format_candidate_questions(candidate_questions)}
+
 Score from 0.0 to 1.0. Include corrected_or_expected_answer that the candidate can study.
 """.strip()
 
@@ -132,6 +142,12 @@ Score from 0.0 to 1.0. Include corrected_or_expected_answer that the candidate c
         score = max(0.0, min(1.0, float(evaluation.get("score", 0.0))))
         evaluation["score"] = score
         return evaluation
+
+    @staticmethod
+    def _format_candidate_questions(candidate_questions: list[str]) -> str:
+        if not candidate_questions:
+            return "None."
+        return "\n".join(f"- {question}" for question in candidate_questions)
 
     def _retrieve_context(self, transcript: List[InterviewTurn]) -> str:
         retrieval_k = self.config.runtime.retrieval_k
@@ -199,6 +215,7 @@ Score from 0.0 to 1.0. Include corrected_or_expected_answer that the candidate c
             lines.append(
                 f"{turn.interviewer}: Q={turn.question}\n"
                 f"Candidate answer={turn.candidate_answer[:700]}\n"
+                f"Candidate questions={'; '.join(turn.candidate_questions) or 'none'}\n"
                 f"Score={score}; feedback={feedback}"
             )
 

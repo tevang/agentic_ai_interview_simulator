@@ -7,7 +7,6 @@ from typing import List
 
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Prompt
 from rich.table import Table
 
 from .agents import InterviewTurn, InterviewerAgent
@@ -50,22 +49,22 @@ class InterviewOrchestrator:
                 )
             )
 
-            try:
-                answer = Prompt.ask("Your answer (type 'quit' to end)")
-            except (EOFError, KeyboardInterrupt):
-                self.console.print("\n[yellow]Interview ended before an answer was entered.[/yellow]")
+            candidate_input = self._read_candidate_input()
+            if candidate_input is None:
                 break
 
-            if answer.strip().lower() in {"quit", "exit", "q"}:
+            answer, candidate_questions = candidate_input
+            if answer.strip().lower() in {"quit", "exit", "q"} and not candidate_questions:
                 break
 
-            evaluation = agent.evaluate_answer(question, answer, self.transcript)
+            evaluation = agent.evaluate_answer(question, answer, candidate_questions, self.transcript)
 
             turn = InterviewTurn(
                 interviewer=agent.name,
                 question=question["question"],
                 expected_answer=question["expected_answer"],
                 candidate_answer=answer,
+                candidate_questions=candidate_questions,
                 evaluation=evaluation,
             )
 
@@ -84,10 +83,48 @@ class InterviewOrchestrator:
                 f"Candidate: {self.config.documents.candidate.name}\n"
                 f"Company: {self.config.documents.company.name}\n"
                 f"Interviewers: {names}\n\n"
-                "Answer naturally. The system will evaluate each answer and then show the expected answer.",
+                "Answer naturally. Finish each answer with a line containing *****.\n"
+                "Use Q: at the start of a line for questions to the simulator.",
                 title="Senior AI Developer Interview Practice",
             )
         )
+
+    def _read_candidate_input(self) -> tuple[str, list[str]] | None:
+        self.console.print(
+            "[bold]Your answer[/bold] "
+            "[dim](finish with ***** on its own line; type quit/exit/q before ***** to end)[/dim]"
+        )
+
+        lines: list[str] = []
+
+        while True:
+            try:
+                line = self.console.input()
+            except (EOFError, KeyboardInterrupt):
+                self.console.print("\n[yellow]Interview ended before ***** was entered.[/yellow]")
+                return None
+
+            if line.strip() == "*****":
+                break
+
+            if not lines and line.strip().lower() in {"quit", "exit", "q"}:
+                return line.strip(), []
+
+            lines.append(line)
+
+        answer_lines: list[str] = []
+        candidate_questions: list[str] = []
+
+        for line in lines:
+            stripped = line.lstrip()
+            if stripped.startswith("Q:"):
+                question = stripped[2:].strip()
+                if question:
+                    candidate_questions.append(question)
+            else:
+                answer_lines.append(line)
+
+        return "\n".join(answer_lines).strip(), candidate_questions
 
     def _print_evaluation(self, evaluation: dict, question: dict) -> None:
         table = Table(title="Evaluation")
@@ -108,6 +145,24 @@ class InterviewOrchestrator:
                 Panel(
                     evaluation.get("corrected_or_expected_answer") or question["expected_answer"],
                     title="Expected / corrected answer",
+                )
+            )
+
+        maximum_score_answer = evaluation.get("maximum_score_answer", "").strip()
+        if maximum_score_answer:
+            self.console.print(
+                Panel(
+                    maximum_score_answer,
+                    title="Maximum-score answer",
+                )
+            )
+
+        candidate_question_answers = evaluation.get("answers_to_candidate_questions", [])
+        if candidate_question_answers:
+            self.console.print(
+                Panel(
+                    "\n\n".join(candidate_question_answers),
+                    title="Answers to your Q: questions",
                 )
             )
 
@@ -144,6 +199,7 @@ class InterviewOrchestrator:
                 "question": t.question,
                 "expected_answer": t.expected_answer,
                 "candidate_answer": t.candidate_answer,
+                "candidate_questions": t.candidate_questions,
                 "evaluation": t.evaluation,
             }
             for t in self.transcript

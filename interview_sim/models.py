@@ -35,6 +35,8 @@ EVALUATION_SCHEMA = {
         "feedback_to_candidate": {"type": "string"},
         "missing_points": {"type": "array", "items": {"type": "string"}},
         "corrected_or_expected_answer": {"type": "string"},
+        "maximum_score_answer": {"type": "string"},
+        "answers_to_candidate_questions": {"type": "array", "items": {"type": "string"}},
         "suggested_follow_up_question": {"type": "string"},
     },
     "required": [
@@ -43,6 +45,8 @@ EVALUATION_SCHEMA = {
         "feedback_to_candidate",
         "missing_points",
         "corrected_or_expected_answer",
+        "maximum_score_answer",
+        "answers_to_candidate_questions",
         "suggested_follow_up_question",
     ],
 }

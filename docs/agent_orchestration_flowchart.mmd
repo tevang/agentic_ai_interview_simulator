@@ -23,7 +23,7 @@ flowchart TD
     LLMQuestion["LLMClient.json()\nquestion-generation model"]
     QuestionJSON["Question JSON\nquestion_type\nquestion\nwhy_this_interviewer_asks\nexpected_answer\nevaluation_rubric"]
 
-    Prompt["Rich Prompt.ask()\ncandidate answer"]
+    Prompt["Guarded multi-line input\ncandidate answer ends at *****\nQ: lines become simulator questions"]
     LLMEval["LLMClient.json()\nevaluator model"]
     EvalJSON["Evaluation JSON\nscore\nverdict\nfeedback\nmissing_points\ncorrected answer\noptional follow-up"]
     Display["Console output\nquestion\nevaluation table\nexpected/corrected answer"]
