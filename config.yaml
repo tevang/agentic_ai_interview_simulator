@@ -1,39 +1,69 @@
+# Generic template configuration. Replace the placeholder PDF paths and names
+# with your candidate, job, company, and interviewer data before running.
+
 project:
+  # Used in the opening screen and to identify the practice session.
   name: generic_ai_developer_practice
+  # Local Chroma vector-store cache. Delete this directory or use
+  # --force-reingest if your source documents changed significantly.
   storage_dir: ./.interview_memory
+  # JSON transcripts are written here at the end of each run.
   log_dir: ./session_logs
 
 models:
+  # Generates interview questions from the retrieved context.
   chat_model: gpt-4o
+  # Scores candidate answers and writes feedback.
   evaluator_model: gpt-4o
+  # Embeds documents and queries for semantic retrieval.
   embedding_model: text-embedding-3-small
+  # Higher values make questions more varied; lower values are more predictable.
   temperature_question: 0.45
+  # Keep evaluation low-temperature for consistent scoring.
   temperature_evaluation: 0.1
 
 runtime:
+  # The code supports 1-3 interviewer agents. This must be at least the number
+  # of entries in documents.interviewers.
   max_interviewers: 3
+  # Total number of questions before the session ends automatically.
   max_questions: 10
+  # Currently the orchestrator cycles through agents in order.
   question_order: round_robin
+  # Show the expected/corrected answer after each evaluation.
   print_expected_answer: true
+  # Show a suggested follow-up question when the score is below passing_score.
   allow_followups: true
+  # Scores below this threshold may trigger follow-up practice suggestions.
   passing_score: 0.75
+  # Number of chunks retrieved from each major context source.
   retrieval_k: 6
 
 documents:
   company:
     name: "TechCorp Inc."
+    # Used by Tavily extract when web_research.enabled is true.
     website: "https://www.example.com"
+  # Main role description used to ground questions.
   job_description_pdf: data/job_description.pdf
+  # Optional PDF describing the intended interview style or round structure.
   interview_character_pdf: data/interview_character.pdf
   candidate:
     name: "John Doe"
+    # Candidate resume/CV used to personalize questions and evaluation.
     cv_pdf: data/resume.pdf
+  # Each entry becomes one InterviewerAgent. Remove entries to practice with
+  # fewer interviewers.
   interviewers:
     - name: "Interviewer A"
+      # Short professional context injected into this agent's prompt.
       role_hint: "Engineering Manager"
+      # Controls the tone and focus of this interviewer's questions.
       style_hint: "Focuses on architectural patterns, system design, and team leadership."
+      # Profile PDFs are required and cached as interviewer-specific context.
       profile_pdfs:
         - data/interviewer_a_profile.pdf
+      # Optional additional PDFs for this interviewer.
       extra_pdfs: []
 
     - name: "Interviewer B"
@@ -51,27 +81,40 @@ documents:
       extra_pdfs: []
 
 web_research:
+  # Requires TAVILY_API_KEY. If false or no key is present, PDF-only mode still works.
   enabled: true
   provider: tavily
+  # Tavily search depth: "basic" is faster and cheaper; "advanced" is broader.
   search_depth: basic
+  # Maximum Tavily results stored per query.
   max_results_per_query: 4
+  # Ask Tavily to include a synthesized answer when available.
   include_answer: true
+  # Raw content is larger and slower; usually leave false.
   include_raw_content: false
+  # Number of skill-focused web queries generated from the job description.
   max_job_skill_queries: 8
+  # Number of skill-focused web queries generated from each interviewer profile.
   max_interviewer_skill_queries: 3
+  # Avoid repeated interviewer web research when their profile is already cached.
   skip_research_if_interviewer_registered: true
+  # Company-level searches added to the context store.
   company_queries:
     - "TechCorp Inc. AI engineering team culture and technology stack"
     - "TechCorp Inc. latest news and products"
 
 guardrails:
+  # Prevent web searches for candidate/interviewer names.
   forbid_name_search: true
   candidate_names:
     - "John Doe"
+  # Automatically extended with documents.interviewers names at load time.
   interviewer_names: []
+  # Add sensitive terms here to block them from generated web queries.
   forbidden_extra_terms: []
 
 prompts:
+  # High-level instruction shared by all interviewer agents.
   interview_goal: >
     Emulate a realistic technical interview for an AI Developer position.
     The first round focuses on the candidate's background, core AI concepts,

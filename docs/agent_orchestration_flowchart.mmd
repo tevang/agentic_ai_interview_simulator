@@ -1,0 +1,96 @@
+flowchart TD
+    User["Candidate / terminal user"]
+    CLI["main.py --config config.yaml"]
+    Config["load_config()\nPydantic AppConfig"]
+    Env["load_dotenv()\nOPENAI_API_KEY required\nTAVILY_API_KEY optional"]
+    Memory["MemoryStore\nChroma persistent vector DB"]
+    Embed["Embedding function\nOpenAI or Chroma default\nselected by collection dimension"]
+
+    Bootstrap["Bootstrapper\nprepares interview context"]
+    PDF["PDF ingestion\njob description\ncandidate CV\ninterview character\ninterviewer profiles"]
+    Researcher["TavilyResearcher\ncompany and skill research"]
+    Guard["ResearchGuard\nblocks candidate/interviewer name searches"]
+    Store["Chunk + upsert context\nowner_type metadata\nsource_id cache checks"]
+
+    Orchestrator["InterviewOrchestrator\nruns the interview loop"]
+    AgentFactory["Create InterviewerAgent instances\none per documents.interviewers entry\nmaximum 3"]
+    AgentA["InterviewerAgent A\nrole_hint + style_hint"]
+    AgentB["InterviewerAgent B\nrole_hint + style_hint"]
+    AgentC["InterviewerAgent C\nrole_hint + style_hint"]
+
+    Retrieve["Each active interviewer retrieves context\ninterviewer profile\njob\ncandidate CV\ninterview character\ncompany\ntechnical research"]
+    Transcript["Transcript summary\nprevious Q/A, score, feedback"]
+    LLMQuestion["LLMClient.json()\nquestion-generation model"]
+    QuestionJSON["Question JSON\nquestion_type\nquestion\nwhy_this_interviewer_asks\nexpected_answer\nevaluation_rubric"]
+
+    Prompt["Rich Prompt.ask()\ncandidate answer"]
+    LLMEval["LLMClient.json()\nevaluator model"]
+    EvalJSON["Evaluation JSON\nscore\nverdict\nfeedback\nmissing_points\ncorrected answer\noptional follow-up"]
+    Display["Console output\nquestion\nevaluation table\nexpected/corrected answer"]
+    Save["Save transcript JSON\nsession_logs/interview_session_*.json"]
+
+    User --> CLI
+    CLI --> Env
+    CLI --> Config
+    Config --> Memory
+    Env --> Memory
+    Memory --> Embed
+
+    Config --> Bootstrap
+    Memory --> Bootstrap
+    Bootstrap --> PDF
+    Bootstrap --> Researcher
+    Researcher --> Guard
+    PDF --> Store
+    Researcher --> Store
+    Store --> Memory
+
+    Config --> Orchestrator
+    Memory --> Orchestrator
+    Orchestrator --> AgentFactory
+    AgentFactory --> AgentA
+    AgentFactory --> AgentB
+    AgentFactory --> AgentC
+
+    Orchestrator -->|"round-robin loop until runtime.max_questions or quit"| AgentA
+    Orchestrator -->|"round-robin loop"| AgentB
+    Orchestrator -->|"round-robin loop"| AgentC
+
+    AgentA --> Retrieve
+    AgentB --> Retrieve
+    AgentC --> Retrieve
+    Retrieve --> Memory
+    Memory --> Retrieve
+    Retrieve --> Transcript
+    Transcript --> LLMQuestion
+    LLMQuestion --> QuestionJSON
+    QuestionJSON --> Display
+    Display --> User
+
+    User --> Prompt
+    Prompt --> LLMEval
+    QuestionJSON --> LLMEval
+    Retrieve --> LLMEval
+    LLMEval --> EvalJSON
+    EvalJSON --> Display
+    EvalJSON --> Transcript
+    Transcript --> Orchestrator
+
+    Orchestrator -->|"quit, EOF, Ctrl-C, or max questions"| Save
+
+    subgraph "Configuration controls"
+        Runtime["runtime\nmax_questions\npassing_score\nretrieval_k\nprint_expected_answer\nallow_followups"]
+        Models["models\nchat_model\nevaluator_model\nembedding_model\ntemperatures"]
+        Docs["documents\ncompany\nPDF paths\ninterviewer list"]
+        Web["web_research\nTavily settings\nquery limits\ncache behavior"]
+        Rails["guardrails\nforbid_name_search\nblocked names/terms"]
+    end
+
+    Runtime --> Orchestrator
+    Models --> LLMQuestion
+    Models --> LLMEval
+    Models --> Embed
+    Docs --> Bootstrap
+    Docs --> AgentFactory
+    Web --> Researcher
+    Rails --> Guard
