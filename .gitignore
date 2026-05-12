@@ -1,0 +1,14 @@
+# JetBrains / PyCharm / IntelliJ project files
+.idea/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Local environment files
+.env
+
+# Local runtime/generated project data
+.interview_memory/
+session_logs/
+temp/

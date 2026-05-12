@@ -1,0 +1,78 @@
+project:
+  name: generic_ai_developer_practice
+  storage_dir: ./.interview_memory
+  log_dir: ./session_logs
+
+models:
+  chat_model: gpt-4o
+  evaluator_model: gpt-4o
+  embedding_model: text-embedding-3-small
+  temperature_question: 0.45
+  temperature_evaluation: 0.1
+
+runtime:
+  max_interviewers: 3
+  max_questions: 10
+  question_order: round_robin
+  print_expected_answer: true
+  allow_followups: true
+  passing_score: 0.75
+  retrieval_k: 6
+
+documents:
+  company:
+    name: "TechCorp Inc."
+    website: "https://www.example.com"
+  job_description_pdf: data/job_description.pdf
+  interview_character_pdf: data/interview_character.pdf
+  candidate:
+    name: "John Doe"
+    cv_pdf: data/resume.pdf
+  interviewers:
+    - name: "Interviewer A"
+      role_hint: "Engineering Manager"
+      style_hint: "Focuses on architectural patterns, system design, and team leadership."
+      profile_pdfs:
+        - data/interviewer_a_profile.pdf
+      extra_pdfs: []
+
+    - name: "Interviewer B"
+      role_hint: "Senior Software Engineer"
+      style_hint: "Technical and hands-on; likely to probe coding skills, implementation details, and RAG architectures."
+      profile_pdfs:
+        - data/interviewer_b_profile.pdf
+      extra_pdfs: []
+
+    - name: "Interviewer C"
+      role_hint: "AI Researcher"
+      style_hint: "Deeply technical; focuses on model architectures, fine-tuning strategies, and evaluation metrics."
+      profile_pdfs:
+        - data/interviewer_c_profile.pdf
+      extra_pdfs: []
+
+web_research:
+  enabled: true
+  provider: tavily
+  search_depth: basic
+  max_results_per_query: 4
+  include_answer: true
+  include_raw_content: false
+  max_job_skill_queries: 8
+  max_interviewer_skill_queries: 3
+  skip_research_if_interviewer_registered: true
+  company_queries:
+    - "TechCorp Inc. AI engineering team culture and technology stack"
+    - "TechCorp Inc. latest news and products"
+
+guardrails:
+  forbid_name_search: true
+  candidate_names:
+    - "John Doe"
+  interviewer_names: []
+  forbidden_extra_terms: []
+
+prompts:
+  interview_goal: >
+    Emulate a realistic technical interview for an AI Developer position.
+    The first round focuses on the candidate's background, core AI concepts,
+    and fit for the role.
